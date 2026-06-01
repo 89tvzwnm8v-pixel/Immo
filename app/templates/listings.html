@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Inserate – Immo-Scanner Frankfurt{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0 fw-bold">Inserate</h4>
+    <small class="text-muted">{{ total }} Ergebnisse</small>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" action="/listings" class="row g-2 align-items-end">
+      <div class="col-auto">
+        <label class="form-label small mb-1">Quelle</label>
+        <select name="source" class="form-select form-select-sm">
+          <option value="">Alle</option>
+          <option value="immoscout24" {% if filters.source == 'immoscout24' %}selected{% endif %}>ImmobilienScout24</option>
+          <option value="immowelt" {% if filters.source == 'immowelt' %}selected{% endif %}>Immowelt</option>
+          <option value="immonet" {% if filters.source == 'immonet' %}selected{% endif %}>Immonet</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <label class="form-label small mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">Alle</option>
+          <option value="new" {% if filters.status == 'new' %}selected{% endif %}>Neu</option>
+          <option value="seen" {% if filters.status == 'seen' %}selected{% endif %}>Gesehen</option>
+          <option value="saved" {% if filters.status == 'saved' %}selected{% endif %}>Gemerkt</option>
+          <option value="archived" {% if filters.status == 'archived' %}selected{% endif %}>Archiviert</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <label class="form-label small mb-1">Preis max (€)</label>
+        <input type="number" name="max_price" class="form-control form-control-sm" style="width:120px;"
+               value="{{ filters.max_price or '' }}" placeholder="600000">
+      </div>
+      <div class="col-auto">
+        <label class="form-label small mb-1">Größe min (m²)</label>
+        <input type="number" name="min_size" class="form-control form-control-sm" style="width:100px;"
+               value="{{ filters.min_size or '' }}" placeholder="50">
+      </div>
+      <div class="col-auto">
+        <label class="form-label small mb-1">Stadtteil</label>
+        <select name="district" class="form-select form-select-sm">
+          <option value="">Alle</option>
+          {% for d in districts %}
+          <option value="{{ d }}" {% if filters.district == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="bi bi-funnel me-1"></i>Filtern
+        </button>
+        <a href="/listings" class="btn btn-sm btn-outline-secondary ms-1">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Listings table -->
+<div class="card">
+  <div class="card-body p-0">
+    {% if listings %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-3">Quelle</th>
+            <th>Titel</th>
+            <th>Preis</th>
+            <th>Größe</th>
+            <th>Zimmer</th>
+            <th>€/m²</th>
+            <th>Stadtteil</th>
+            <th>Status</th>
+            <th>Gefunden</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in listings %}
+          <tr>
+            <td class="ps-3">
+              <span class="badge source-badge
+                {% if l.source == 'immoscout24' %}badge-immoscout24
+                {% elif l.source == 'immowelt' %}badge-immowelt
+                {% elif l.source == 'immonet' %}badge-immonet
+                {% else %}bg-secondary{% endif %}">
+                {% if l.source == 'immoscout24' %}IS24
+                {% elif l.source == 'immowelt' %}IW
+                {% elif l.source == 'immonet' %}IN
+                {% else %}{{ l.source }}{% endif %}
+              </span>
+            </td>
+            <td>
+              <a href="/listings/{{ l.id }}" class="text-decoration-none text-dark fw-semibold text-truncate d-inline-block"
+                 style="max-width:260px;" title="{{ l.title }}">
+                {{ l.title }}
+              </a>
+            </td>
+            <td class="price-cell">{{ l.price | price }}</td>
+            <td>{{ l.size_sqm | sqm }}</td>
+            <td>{{ l.rooms | rooms }}</td>
+            <td class="text-muted small">{% if l.price_per_sqm %}{{ l.price_per_sqm | int }} €/m²{% else %}—{% endif %}</td>
+            <td class="text-muted small">{{ l.district or "—" }}</td>
+            <td>
+              <span class="badge status-badge-{{ l.status }}">
+                {% if l.status == 'new' %}Neu
+                {% elif l.status == 'seen' %}Gesehen
+                {% elif l.status == 'saved' %}Gemerkt
+                {% elif l.status == 'archived' %}Archiviert
+                {% else %}{{ l.status }}{% endif %}
+              </span>
+            </td>
+            <td class="text-muted small">{{ l.first_seen_at | dt }}</td>
+            <td>
+              <a href="{{ l.url }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0">
+                <i class="bi bi-box-arrow-up-right"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pages > 1 %}
+    <div class="d-flex justify-content-center py-3">
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          {% if page > 1 %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page-1 }}&{{ request.query_params }}">‹</a>
+          </li>
+          {% endif %}
+          {% for p in range(1, pages+1) %}
+          {% if p == page %}
+          <li class="page-item active"><span class="page-link">{{ p }}</span></li>
+          {% elif p <= 3 or p >= pages-2 or (p >= page-2 and p <= page+2) %}
+          <li class="page-item"><a class="page-link" href="?page={{ p }}">{{ p }}</a></li>
+          {% endif %}
+          {% endfor %}
+          {% if page < pages %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page+1 }}">›</a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-search display-4 d-block mb-3"></i>
+      <p>Keine Inserate gefunden.</p>
+      <a href="/listings" class="btn btn-outline-primary">Filter zurücksetzen</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

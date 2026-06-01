@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}{{ listing.title }} – Immo-Scanner{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="/listings" class="text-decoration-none text-muted">
+    <i class="bi bi-arrow-left me-1"></i>Zurück zu Inseraten
+  </a>
+</div>
+
+<div class="row g-3">
+  <!-- Main content -->
+  <div class="col-lg-8">
+    <!-- Header card -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <span class="badge source-badge
+            {% if listing.source == 'immoscout24' %}badge-immoscout24
+            {% elif listing.source == 'immowelt' %}badge-immowelt
+            {% elif listing.source == 'immonet' %}badge-immonet
+            {% else %}bg-secondary{% endif %} mb-2">
+            {{ listing.source.replace('immoscout24','ImmobilienScout24').replace('immowelt','Immowelt').replace('immonet','Immonet') }}
+          </span>
+          <a href="{{ listing.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Original öffnen
+          </a>
+        </div>
+        <h2 class="fw-bold mb-3">{{ listing.title }}</h2>
+
+        <!-- Key facts -->
+        <div class="row g-3 mb-3">
+          <div class="col-6 col-md-3">
+            <div class="bg-light rounded p-3 text-center">
+              <div class="text-muted small">Kaufpreis</div>
+              <div class="fw-bold fs-5">{{ listing.price | price }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="bg-light rounded p-3 text-center">
+              <div class="text-muted small">Wohnfläche</div>
+              <div class="fw-bold fs-5">{{ listing.size_sqm | sqm }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="bg-light rounded p-3 text-center">
+              <div class="text-muted small">Zimmer</div>
+              <div class="fw-bold fs-5">{{ listing.rooms | rooms }}</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="bg-light rounded p-3 text-center">
+              <div class="text-muted small">€/m²</div>
+              <div class="fw-bold fs-5">{% if listing.price_per_sqm %}{{ listing.price_per_sqm | int }} €{% else %}—{% endif %}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional details -->
+        <div class="row g-2">
+          {% if listing.district %}
+          <div class="col-auto">
+            <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt me-1"></i>{{ listing.district }}</span>
+          </div>
+          {% endif %}
+          {% if listing.floor %}
+          <div class="col-auto">
+            <span class="badge bg-light text-dark border"><i class="bi bi-building me-1"></i>Etage: {{ listing.floor }}</span>
+          </div>
+          {% endif %}
+          {% if listing.year_built %}
+          <div class="col-auto">
+            <span class="badge bg-light text-dark border"><i class="bi bi-calendar me-1"></i>Baujahr: {{ listing.year_built }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Images -->
+    {% if listing.images %}
+    <div class="card mb-3">
+      <div class="card-body p-2">
+        <div class="row g-2">
+          {% for img in listing.images[:6] %}
+          <div class="col-{{ '12' if loop.first else '6' }}">
+            <img src="{{ img }}" alt="Bild {{ loop.index }}"
+                 class="img-fluid rounded w-100" style="max-height:{% if loop.first %}320px{% else %}160px{% endif %}; object-fit:cover;">
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Description -->
+    {% if listing.description %}
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold">Beschreibung</div>
+      <div class="card-body">
+        <p class="mb-0" style="white-space: pre-line;">{{ listing.description }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Features -->
+    {% if listing.features %}
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold">Ausstattung</div>
+      <div class="card-body">
+        <div class="row g-2">
+          {% for feat in listing.features %}
+          <div class="col-6 col-md-4">
+            <span class="d-flex align-items-center gap-1">
+              <i class="bi bi-check-circle-fill text-success small"></i>
+              <span class="small">{{ feat }}</span>
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <div class="col-lg-4">
+    <!-- Status -->
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold">Status</div>
+      <div class="card-body">
+        <div class="mb-3">
+          <span class="badge status-badge-{{ listing.status }} fs-6">
+            {% if listing.status == 'new' %}Neu
+            {% elif listing.status == 'seen' %}Gesehen
+            {% elif listing.status == 'saved' %}Gemerkt
+            {% elif listing.status == 'archived' %}Archiviert
+            {% else %}{{ listing.status }}{% endif %}
+          </span>
+        </div>
+        <form method="post" action="/listings/{{ listing.id }}/status">
+          <div class="d-grid gap-2">
+            {% if listing.status != 'saved' %}
+            <button type="submit" name="status" value="saved" class="btn btn-success btn-sm">
+              <i class="bi bi-bookmark-fill me-1"></i>Merken
+            </button>
+            {% endif %}
+            {% if listing.status != 'archived' %}
+            <button type="submit" name="status" value="archived" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-archive me-1"></i>Archivieren
+            </button>
+            {% endif %}
+            {% if listing.status == 'archived' or listing.status == 'saved' %}
+            <button type="submit" name="status" value="new" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-arrow-counterclockwise me-1"></i>Auf Neu setzen
+            </button>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Address -->
+    {% if listing.address %}
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold">Adresse</div>
+      <div class="card-body">
+        <p class="mb-1"><i class="bi bi-geo-alt text-muted me-2"></i>{{ listing.address }}</p>
+        {% if listing.district %}
+        <p class="mb-0 text-muted small">Stadtteil: {{ listing.district }}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Contact -->
+    {% if listing.contact_name or listing.contact_phone or listing.contact_email %}
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold">Kontakt</div>
+      <div class="card-body">
+        {% if listing.contact_name %}
+        <p class="mb-1"><i class="bi bi-person text-muted me-2"></i>{{ listing.contact_name }}</p>
+        {% endif %}
+        {% if listing.contact_phone %}
+        <p class="mb-1">
+          <i class="bi bi-telephone text-muted me-2"></i>
+          <a href="tel:{{ listing.contact_phone }}">{{ listing.contact_phone }}</a>
+        </p>
+        {% endif %}
+        {% if listing.contact_email %}
+        <p class="mb-0">
+          <i class="bi bi-envelope text-muted me-2"></i>
+          <a href="mailto:{{ listing.contact_email }}">{{ listing.contact_email }}</a>
+        </p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Expose fetch -->
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold">Exposé-Daten</div>
+      <div class="card-body">
+        {% if listing.expose_fetched_at %}
+        <p class="small text-muted mb-2">Zuletzt aktualisiert: {{ listing.expose_fetched_at | dt }}</p>
+        {% else %}
+        <p class="small text-muted mb-2">Vollständige Exposé-Daten noch nicht geladen.</p>
+        {% endif %}
+        <button class="btn btn-outline-primary btn-sm w-100" onclick="fetchExpose({{ listing.id }})">
+          <i class="bi bi-cloud-download me-1"></i>Exposé laden
+        </button>
+      </div>
+    </div>
+
+    <!-- Meta -->
+    <div class="card">
+      <div class="card-header bg-white fw-semibold">Metadaten</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5 text-muted">ID</dt>
+          <dd class="col-7">{{ listing.id }}</dd>
+          <dt class="col-5 text-muted">Externe ID</dt>
+          <dd class="col-7 text-truncate" title="{{ listing.external_id }}">{{ listing.external_id }}</dd>
+          <dt class="col-5 text-muted">Quelle</dt>
+          <dd class="col-7">{{ listing.source }}</dd>
+          <dt class="col-5 text-muted">Erstmals gesehen</dt>
+          <dd class="col-7">{{ listing.first_seen_at | dt }}</dd>
+          <dt class="col-5 text-muted">Zuletzt gesehen</dt>
+          <dd class="col-7">{{ listing.last_seen_at | dt }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fetchExpose(id) {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Lädt...';
+  fetch(`/listings/${id}/fetch-expose`, {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        btn.innerHTML = '<i class="bi bi-check me-1"></i>Geladen!';
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        btn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Fehler';
+        btn.disabled = false;
+      }
+    })
+    .catch(() => {
+      btn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Fehler';
+      btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}

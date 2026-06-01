@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Einstellungen – Immo-Scanner{% endblock %}
+
+{% block content %}
+<h4 class="fw-bold mb-4">Einstellungen</h4>
+
+{% if request.query_params.get('saved') %}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  <i class="bi bi-check-circle me-2"></i>Einstellungen wurden gespeichert.
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <form method="post" action="/settings">
+      <!-- Search settings -->
+      <div class="card mb-3">
+        <div class="card-header bg-white fw-semibold">Suchparameter</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Max. Kaufpreis (€)</label>
+              <input type="number" name="max_price" class="form-control" value="{{ settings.max_price | int }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Min. Wohnfläche (m²)</label>
+              <input type="number" name="min_size" class="form-control" value="{{ settings.min_size | int }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Min. Zimmer</label>
+              <input type="number" step="0.5" name="min_rooms" class="form-control" value="{{ settings.min_rooms }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Scan-Intervall (Minuten)</label>
+              <input type="number" name="search_interval_minutes" class="form-control" value="{{ settings.search_interval_minutes }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Email settings -->
+      <div class="card mb-3">
+        <div class="card-header bg-white fw-semibold">E-Mail-Benachrichtigungen</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">SMTP-Host</label>
+              <input type="text" name="smtp_host" class="form-control" value="{{ settings.smtp_host }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">SMTP-Port</label>
+              <input type="number" name="smtp_port" class="form-control" value="{{ settings.smtp_port }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">SMTP-Benutzer</label>
+              <input type="email" name="smtp_user" class="form-control" value="{{ settings.smtp_user }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">SMTP-Passwort</label>
+              <input type="password" name="smtp_password" class="form-control" placeholder="••••••••">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Benachrichtigungs-E-Mail</label>
+              <input type="email" name="notify_email" class="form-control" value="{{ settings.notify_email }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- App settings -->
+      <div class="card mb-3">
+        <div class="card-header bg-white fw-semibold">App-Einstellungen</div>
+        <div class="card-body">
+          <div class="col-12">
+            <label class="form-label">Basis-URL</label>
+            <input type="url" name="base_url" class="form-control" value="{{ settings.base_url }}">
+            <div class="form-text">Wird in E-Mail-Links verwendet.</div>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save me-1"></i>Speichern
+      </button>
+    </form>
+  </div>
+
+  <div class="col-lg-5">
+    <!-- Search profiles -->
+    <div class="card mb-3">
+      <div class="card-header bg-white fw-semibold">Suchprofile</div>
+      <div class="card-body p-0">
+        {% if profiles %}
+        <table class="table table-sm mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-3">Name</th>
+              <th>Quelle</th>
+              <th>Aktiv</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in profiles %}
+            <tr>
+              <td class="ps-3 small">{{ p.name }}</td>
+              <td>
+                <span class="badge source-badge
+                  {% if p.source == 'immoscout24' %}badge-immoscout24
+                  {% elif p.source == 'immowelt' %}badge-immowelt
+                  {% elif p.source == 'immonet' %}badge-immonet
+                  {% else %}bg-secondary{% endif %}">
+                  {{ p.source }}
+                </span>
+              </td>
+              <td>
+                {% if p.active %}
+                <span class="badge bg-success">Ja</span>
+                {% else %}
+                <span class="badge bg-secondary">Nein</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="p-3 text-muted mb-0">Keine Profile vorhanden.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Recent scan runs -->
+    <div class="card">
+      <div class="card-header bg-white fw-semibold">Letzte Scan-Läufe</div>
+      <div class="card-body p-0">
+        {% if recent_scans %}
+        <table class="table table-sm mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-3">Quelle</th>
+              <th>Gestartet</th>
+              <th>Gefunden</th>
+              <th>Neu</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in recent_scans %}
+            <tr>
+              <td class="ps-3 small">
+                <span class="badge source-badge
+                  {% if s.source == 'immoscout24' %}badge-immoscout24
+                  {% elif s.source == 'immowelt' %}badge-immowelt
+                  {% elif s.source == 'immonet' %}badge-immonet
+                  {% else %}bg-secondary{% endif %}">
+                  {% if s.source == 'immoscout24' %}IS24
+                  {% elif s.source == 'immowelt' %}IW
+                  {% elif s.source == 'immonet' %}IN
+                  {% else %}{{ s.source }}{% endif %}
+                </span>
+              </td>
+              <td class="small text-muted">{{ s.started_at | dt }}</td>
+              <td class="small">{{ s.listings_found }}</td>
+              <td class="small">
+                {% if s.listings_new > 0 %}
+                <span class="text-success fw-bold">+{{ s.listings_new }}</span>
+                {% else %}0{% endif %}
+              </td>
+              <td>
+                {% if s.error %}
+                <span class="badge bg-danger" title="{{ s.error }}">Fehler</span>
+                {% else %}
+                <span class="badge bg-success">OK</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="p-3 text-muted mb-0">Noch keine Scans durchgeführt.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Manual scan buttons -->
+    <div class="card mt-3">
+      <div class="card-header bg-white fw-semibold">Manueller Scan</div>
+      <div class="card-body d-flex flex-wrap gap-2">
+        <button class="btn btn-primary btn-sm" onclick="triggerScan()">
+          <i class="bi bi-arrow-clockwise me-1"></i>Alle scannen
+        </button>
+        <button class="btn btn-outline-primary btn-sm" onclick="scanSource('immoscout24')">
+          IS24 scannen
+        </button>
+        <button class="btn btn-outline-danger btn-sm" onclick="scanSource('immowelt')">
+          Immowelt scannen
+        </button>
+        <button class="btn btn-outline-success btn-sm" onclick="scanSource('immonet')">
+          Immonet scannen
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function scanSource(source) {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Scannt...';
+  fetch(`/scan?source=${source}`)
+    .then(r => r.json())
+    .then(data => {
+      const res = data.results && data.results[0];
+      if (res) {
+        btn.innerHTML = `✓ ${res.listings_new} neu`;
+      } else {
+        btn.innerHTML = '✓ Fertig';
+      }
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = source === 'immoscout24' ? 'IS24 scannen' : source.charAt(0).toUpperCase() + source.slice(1) + ' scannen';
+        window.location.reload();
+      }, 3000);
+    })
+    .catch(() => {
+      btn.disabled = false;
+      btn.textContent = 'Fehler';
+    });
+}
+</script>
+{% endblock %}
