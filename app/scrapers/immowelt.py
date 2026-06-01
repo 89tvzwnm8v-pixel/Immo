@@ -2,13 +2,13 @@ import logging
 import re
 from typing import List, Optional, Dict, Any
 from bs4 import BeautifulSoup
-from app.scrapers.base import BaseScraper
+from app.scrapers.playwright_base import PlaywrightBaseScraper
 from app.models.listing import RawListing
 
 logger = logging.getLogger(__name__)
 
 
-class ImmoweltScraper(BaseScraper):
+class ImmoweltScraper(PlaywrightBaseScraper):
     source_name = "immowelt"
     BASE_SEARCH_URL = "https://www.immowelt.de/liste/frankfurt-am-main/wohnungen/kaufen"
 
@@ -29,8 +29,8 @@ class ImmoweltScraper(BaseScraper):
         url = self.build_search_url(profile)
         listings = []
         try:
-            response = self.get(url)
-            soup = BeautifulSoup(response.text, "lxml")
+            html = self.fetch_html(url, wait_for="[data-testid='serp-core-classified-card-testid']")
+            soup = BeautifulSoup(html, "lxml")
             listings.extend(self._parse_listings(soup))
         except Exception as e:
             logger.error(f"ImmoweltScraper.fetch_listings error: {e}", exc_info=True)
@@ -142,8 +142,8 @@ class ImmoweltScraper(BaseScraper):
 
     def fetch_expose(self, url: str) -> Optional[Dict[str, Any]]:
         try:
-            response = self.get(url)
-            soup = BeautifulSoup(response.text, "lxml")
+            html = self.fetch_html(url)
+            soup = BeautifulSoup(html, "lxml")
             data = {}
 
             # Description

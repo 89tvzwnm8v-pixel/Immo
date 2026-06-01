@@ -3,13 +3,13 @@ import logging
 import re
 from typing import List, Optional, Dict, Any
 from bs4 import BeautifulSoup
-from app.scrapers.base import BaseScraper
+from app.scrapers.playwright_base import PlaywrightBaseScraper
 from app.models.listing import RawListing
 
 logger = logging.getLogger(__name__)
 
 
-class ImmoscoutScraper(BaseScraper):
+class ImmoscoutScraper(PlaywrightBaseScraper):
     source_name = "immoscout24"
     BASE_SEARCH_URL = "https://www.immobilienscout24.de/Suche/de/hessen/frankfurt-am-main/wohnung-kaufen"
 
@@ -30,8 +30,8 @@ class ImmoscoutScraper(BaseScraper):
         url = self.build_search_url(profile)
         listings = []
         try:
-            response = self.get(url)
-            soup = BeautifulSoup(response.text, "lxml")
+            html = self.fetch_html(url, wait_for="[data-testid='result-list-entry']")
+            soup = BeautifulSoup(html, "lxml")
 
             # Try to extract from embedded JSON __INITIAL_STATE__
             scripts = soup.find_all("script")
@@ -148,8 +148,8 @@ class ImmoscoutScraper(BaseScraper):
 
     def fetch_expose(self, url: str) -> Optional[Dict[str, Any]]:
         try:
-            response = self.get(url)
-            soup = BeautifulSoup(response.text, "lxml")
+            html = self.fetch_html(url)
+            soup = BeautifulSoup(html, "lxml")
             data = {}
 
             # Try JSON first

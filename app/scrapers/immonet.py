@@ -2,13 +2,13 @@ import logging
 import re
 from typing import List, Optional, Dict, Any
 from bs4 import BeautifulSoup
-from app.scrapers.base import BaseScraper
+from app.scrapers.playwright_base import PlaywrightBaseScraper
 from app.models.listing import RawListing
 
 logger = logging.getLogger(__name__)
 
 
-class ImmonetScraper(BaseScraper):
+class ImmonetScraper(PlaywrightBaseScraper):
     source_name = "immonet"
     BASE_SEARCH_URL = "https://www.immonet.de/immobiliensuche/sel.do"
 
@@ -34,8 +34,8 @@ class ImmonetScraper(BaseScraper):
         url = self.build_search_url(profile)
         listings = []
         try:
-            response = self.get(url)
-            soup = BeautifulSoup(response.text, "lxml")
+            html = self.fetch_html(url, wait_for="div[id^='item_']")
+            soup = BeautifulSoup(html, "lxml")
             listings.extend(self._parse_listings(soup))
         except Exception as e:
             logger.error(f"ImmonetScraper.fetch_listings error: {e}", exc_info=True)
@@ -150,8 +150,8 @@ class ImmonetScraper(BaseScraper):
 
     def fetch_expose(self, url: str) -> Optional[Dict[str, Any]]:
         try:
-            response = self.get(url)
-            soup = BeautifulSoup(response.text, "lxml")
+            html = self.fetch_html(url)
+            soup = BeautifulSoup(html, "lxml")
             data = {}
 
             # Description
