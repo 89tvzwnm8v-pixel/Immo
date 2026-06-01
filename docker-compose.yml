@@ -1,0 +1,11 @@
+services:
+  immo:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - DATABASE_URL=sqlite:///./data/immo.db
+    restart: unless-stopped
