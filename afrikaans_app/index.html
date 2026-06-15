@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leer Afrikaans</title>
+  <style>
+    :root {
+      --green: #007A4D;
+      --gold:  #FFB612;
+      --red:   #DE3831;
+      --bg:    #f8f6f0;
+      --card:  #ffffff;
+      --text:  #1a1a1a;
+      --muted: #666;
+      --radius: 14px;
+      --shadow: 0 4px 20px rgba(0,0,0,.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--green);
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    header .flag { font-size: 2rem; }
+    header h1 { font-size: 1.5rem; font-weight: 700; }
+    header p  { font-size: .85rem; opacity: .85; }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      gap: 6px;
+      padding: 14px 24px;
+      background: #fff;
+      border-bottom: 2px solid #eee;
+      flex-wrap: wrap;
+    }
+    nav button {
+      padding: 8px 18px;
+      border: 2px solid var(--green);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--green);
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    nav button.active,
+    nav button:hover {
+      background: var(--green);
+      color: #fff;
+    }
+
+    /* ── Main ── */
+    main { max-width: 900px; margin: 30px auto; padding: 0 20px; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+
+    /* ── Flashcard ── */
+    .fc-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .fc-controls select {
+      padding: 7px 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: .9rem;
+    }
+    .fc-progress {
+      margin-left: auto;
+      font-size: .9rem;
+      color: var(--muted);
+    }
+    .flashcard-wrapper {
+      perspective: 1000px;
+      height: 260px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .flashcard {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform .55s ease;
+      border-radius: var(--radius);
+    }
+    .flashcard.flipped { transform: rotateY(180deg); }
+    .flashcard-front,
+    .flashcard-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+    }
+    .flashcard-front {
+      background: var(--card);
+      border: 3px solid var(--gold);
+    }
+    .flashcard-back {
+      background: var(--green);
+      color: #fff;
+      transform: rotateY(180deg);
+    }
+    .flashcard-front .label { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .flashcard-back  .label { font-size: .8rem; opacity: .7; text-transform: uppercase; letter-spacing: 1px; }
+    .fc-word { font-size: 2.2rem; font-weight: 700; text-align: center; }
+    .fc-hint { font-size: .9rem; color: var(--muted); }
+    .flashcard-back .fc-hint { opacity: .8; color: #fff; }
+    .fc-tip { font-size: .82rem; margin-top: 8px; font-style: italic; }
+
+    .fc-nav {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+    }
+    .fc-nav button {
+      padding: 10px 26px;
+      border: none;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .1s;
+    }
+    .fc-nav button:active { transform: scale(.96); }
+    .btn-prev { background: #eee; color: #333; }
+    .btn-next { background: var(--gold); color: #1a1a1a; }
+    .btn-shuffle { background: var(--red); color: #fff; }
+    .fc-click-hint {
+      text-align: center;
+      font-size: .82rem;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    /* ── Quiz ── */
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .quiz-score {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--green);
+    }
+    .progress-bar {
+      height: 8px;
+      background: #ddd;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 999px;
+      transition: width .4s ease;
+    }
+    .quiz-question {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .quiz-question .q-label { font-size: .8rem; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; }
+    .quiz-question .q-word  { font-size: 2rem; font-weight: 700; }
+    .quiz-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .quiz-options button {
+      padding: 16px;
+      border: 2px solid #ddd;
+      border-radius: var(--radius);
+      background: var(--card);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all .15s;
+      font-weight: 500;
+    }
+    .quiz-options button:hover:not(:disabled) { border-color: var(--green); background: #f0faf5; }
+    .quiz-options button.correct { background: #d4edda; border-color: #28a745; color: #155724; }
+    .quiz-options button.wrong   { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+    .quiz-options button:disabled { cursor: default; }
+    .quiz-feedback {
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      min-height: 28px;
+      margin-bottom: 10px;
+    }
+    .quiz-next {
+      display: flex;
+      justify-content: center;
+    }
+    .quiz-next button {
+      padding: 11px 32px;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+    }
+    .quiz-result {
+      text-align: center;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 40px;
+      box-shadow: var(--shadow);
+    }
+    .quiz-result .big { font-size: 3rem; margin-bottom: 12px; }
+    .quiz-result h2 { font-size: 1.6rem; margin-bottom: 8px; }
+    .quiz-result p  { color: var(--muted); margin-bottom: 24px; }
+    .quiz-result button {
+      padding: 12px 32px;
+      background: var(--gold);
+      border: none;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ── Phrases ── */
+    .phrases-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .phrase-category h2 {
+      font-size: 1.1rem;
+      color: var(--green);
+      margin: 24px 0 10px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid var(--gold);
+    }
+    .phrase-card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      border-left: 4px solid var(--gold);
+    }
+    .phrase-af { font-size: 1.05rem; font-weight: 700; color: var(--green); }
+    .phrase-de { font-size: .9rem; color: var(--muted); margin-top: 4px; }
+    .phrase-pron { font-size: .8rem; color: #999; margin-top: 2px; font-style: italic; }
+
+    /* ── Grammar ── */
+    .grammar-section {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .grammar-section h2 {
+      font-size: 1.15rem;
+      color: var(--green);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .grammar-section p, .grammar-section li {
+      font-size: .95rem;
+      line-height: 1.7;
+      color: #333;
+    }
+    .grammar-section ul { padding-left: 20px; margin-top: 8px; }
+    table.grammar-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: .92rem;
+    }
+    table.grammar-table th {
+      background: var(--green);
+      color: #fff;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    table.grammar-table td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+    table.grammar-table tr:nth-child(even) td { background: #f9f9f9; }
+    .tag {
+      display: inline-block;
+      background: var(--gold);
+      color: #1a1a1a;
+      font-size: .75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 6px;
+    }
+
+    /* ── Typing Exercise ── */
+    .typing-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .typing-prompt { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+    .typing-hint   { font-size: .9rem; color: var(--muted); margin-bottom: 20px; }
+    .typing-input {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 16px;
+      font-size: 1.1rem;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      outline: none;
+      transition: border .2s;
+    }
+    .typing-input:focus { border-color: var(--green); }
+    .typing-input.ok    { border-color: #28a745; background: #d4edda; }
+    .typing-input.err   { border-color: #dc3545; background: #f8d7da; }
+    .typing-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+    .typing-actions button {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 999px;
+      font-size: .95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-check { background: var(--green); color: #fff; }
+    .btn-skip  { background: #eee; color: #333; }
+    .typing-feedback { margin-top: 12px; font-size: 1rem; font-weight: 600; min-height: 24px; }
+    .typing-stats { display: flex; gap: 24px; justify-content: center; font-size: .9rem; color: var(--muted); margin-top: 18px; }
+    .typing-stats span strong { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="flag">🇿🇦</div>
+  <div>
+    <h1>Leer Afrikaans</h1>
+    <p>Interaktives Afrikaans-Lernprogramm</p>
+  </div>
+</header>
+
+<nav id="nav">
+  <button data-tab="flashcards" class="active">🃏 Karteikarten</button>
+  <button data-tab="quiz">🧩 Quiz</button>
+  <button data-tab="typing">⌨️ Tippen</button>
+  <button data-tab="phrases">💬 Phrasen</button>
+  <button data-tab="grammar">📖 Grammatik</button>
+</nav>
+
+<main>
+
+  <!-- ── FLASHCARDS ── -->
+  <section class="tab active" id="tab-flashcards">
+    <div class="fc-controls">
+      <label><strong>Kategorie:</strong></label>
+      <select id="fc-category">
+        <option value="all">Alle</option>
+        <option value="basics">Grundlagen</option>
+        <option value="numbers">Zahlen</option>
+        <option value="colors">Farben</option>
+        <option value="food">Essen</option>
+        <option value="family">Familie</option>
+        <option value="time">Zeit</option>
+        <option value="verbs">Verben</option>
+      </select>
+      <span class="fc-progress" id="fc-progress">1 / 20</span>
+    </div>
+    <div class="flashcard-wrapper" id="fc-wrapper">
+      <div class="flashcard" id="flashcard">
+        <div class="flashcard-front">
+          <span class="label">Afrikaans</span>
+          <div class="fc-word" id="fc-front-word">hallo</div>
+          <div class="fc-hint" id="fc-front-hint">Grundlagen</div>
+        </div>
+        <div class="flashcard-back">
+          <span class="label">Deutsch</span>
+          <div class="fc-word" id="fc-back-word">Hallo</div>
+          <div class="fc-hint" id="fc-back-hint">Aussprache: hal-loh</div>
+          <div class="fc-tip" id="fc-tip"></div>
+        </div>
+      </div>
+    </div>
+    <p class="fc-click-hint">Klicken zum Umdrehen</p>
+    <div class="fc-nav">
+      <button class="btn-prev" onclick="fcPrev()">← Zurück</button>
+      <button class="btn-shuffle" onclick="fcShuffle()">🔀 Mischen</button>
+      <button class="btn-next" onclick="fcNext()">Weiter →</button>
+    </div>
+  </section>
+
+  <!-- ── QUIZ ── -->
+  <section class="tab" id="tab-quiz">
+    <div id="quiz-game">
+      <div class="quiz-header">
+        <div id="q-counter">Frage 1 / 10</div>
+        <div class="quiz-score">✅ <span id="q-score">0</span> richtig</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="q-progress" style="width:0%"></div></div>
+      <div class="quiz-question">
+        <div class="q-label" id="q-direction">Afrikaans → Deutsch</div>
+        <div class="q-word" id="q-word">hallo</div>
+      </div>
+      <div class="quiz-options" id="q-options"></div>
+      <div class="quiz-feedback" id="q-feedback"></div>
+      <div class="quiz-next"><button id="q-next-btn" onclick="quizNext()">Nächste Frage →</button></div>
+    </div>
+    <div class="quiz-result" id="quiz-result" style="display:none">
+      <div class="big" id="result-emoji">🎉</div>
+      <h2 id="result-title">Super gemacht!</h2>
+      <p id="result-text"></p>
+      <button onclick="quizRestart()">Nochmal spielen</button>
+    </div>
+  </section>
+
+  <!-- ── TYPING ── -->
+  <section class="tab" id="tab-typing">
+    <div class="typing-card">
+      <div class="typing-hint">Übersetze ins Afrikaans:</div>
+      <div class="typing-prompt" id="type-prompt">Hallo</div>
+      <br>
+      <input class="typing-input" id="type-input" type="text" placeholder="Afrikaans eingeben…" autocomplete="off" />
+      <div class="typing-actions">
+        <button class="btn-check" onclick="typeCheck()">Prüfen ✓</button>
+        <button class="btn-skip" onclick="typeSkip()">Überspringen →</button>
+      </div>
+      <div class="typing-feedback" id="type-feedback"></div>
+    </div>
+    <div class="typing-stats">
+      <span>Richtig: <strong id="type-correct">0</strong></span>
+      <span>Falsch: <strong id="type-wrong">0</strong></span>
+      <span>Übungen: <strong id="type-total">0</strong></span>
+    </div>
+  </section>
+
+  <!-- ── PHRASES ── -->
+  <section class="tab" id="tab-phrases">
+    <div id="phrases-container"></div>
+  </section>
+
+  <!-- ── GRAMMAR ── -->
+  <section class="tab" id="tab-grammar">
+
+    <div class="grammar-section">
+      <h2>📌 Über Afrikaans</h2>
+      <p>Afrikaans ist eine germanische Sprache, die aus dem Niederländischen des 17. Jahrhunderts entstammt. Sie wird von ca. 7 Millionen Muttersprachlern in Südafrika und Namibia gesprochen und ist eng mit dem Deutschen verwandt. Viele Wörter sind sofort erkennbar!</p>
+    </div>
+
+    <div class="grammar-section">
+      <h2>🔤 Aussprache</h2>
+      <table class="grammar-table">
+        <tr><th>Buchstabe / Kombination</th><th>Aussprache</th><th>Beispiel</th></tr>
+        <tr><td><strong>g</strong></td><td>wie „ch" in „Bach" (Reibelaut)</td><td>goed [χuːt] = gut</td></tr>
+        <tr><td><strong>ê</strong></td><td>langes offenes E</td><td>brêd = Brot</td></tr>
+        <tr><td><strong>oe</strong></td><td>wie „u" in „gut"</td><td>boek [buk] = Buch</td></tr>
+        <tr><td><strong>ui</strong></td><td>wie dt. „eu" + „i"</td><td>huis [hœis] = Haus</td></tr>
+        <tr><td><strong>ou/au</strong></td><td>wie „ou" in „loud"</td><td>oud = alt</td></tr>
+        <tr><td><strong>j</strong></td><td>wie dt. „j"</td><td>ja = ja</td></tr>
+        <tr><td><strong>v</strong></td><td>wie dt. „f"</td><td>vader = Vater</td></tr>
+        <tr><td><strong>w</strong></td><td>zwischen „v" und „w"</td><td>water = Wasser</td></tr>
+      </table>
+    </div>
+
+    <div class="grammar-section">
+      <h2>👤 Personalpronomen</h2>
+      <table class="grammar-table">
+        <tr><th>Afrikaans</th><th>Deutsch</th></tr>
+        <tr><td>ek</td><td>ich</td></tr>
+        <tr><td>jy / u</td><td>du / Sie</td></tr>
+        <tr><td>hy / sy / dit</td><td>er / sie / es</td></tr>
+        <tr><td>ons</td><td>wir</td></tr>
+        <tr><td>julle</td><td>ihr</td></tr>
+        <tr><td>hulle</td><td>sie (Plural)</td></tr>
+      </table>
+    </div>
+
+    <div class="grammar-section">
+      <h2>🔧 Verben – keine Konjugation! <span class="tag">Leicht</span></h2>
+      <p>Einer der größten Vorteile von Afrikaans: Verben werden <strong>nicht</strong> nach Person oder Numerus konjugiert.</p>
+      <table class="grammar-table">
+        <tr><th>Afrikaans</th><th>Deutsch</th></tr>
+        <tr><td>ek praat</td><td>ich spreche</td></tr>
+        <tr><td>jy praat</td><td>du sprichst</td></tr>
+        <tr><td>hy praat</td><td>er spricht</td></tr>
+        <tr><td>ons praat</td><td>wir sprechen</td></tr>
+        <tr><td>hulle praat</td><td>sie sprechen</td></tr>
+      </table>
+    </div>
+
+    <div class="grammar-section">
+      <h2>⏱ Vergangenheit</h2>
+      <p>Die Vergangenheit wird mit dem Hilfsverb <strong>het</strong> + Partizip (Präfix <strong>ge-</strong>) gebildet:</p>
+      <ul>
+        <li>Ek <strong>het gepraat</strong>. → Ich habe gesprochen.</li>
+        <li>Sy <strong>het geëet</strong>. → Sie hat gegessen.</li>
+        <li>Ons <strong>het geloop</strong>. → Wir sind gelaufen.</li>
+      </ul>
+    </div>
+
+    <div class="grammar-section">
+      <h2>❌ Verneinung – doppelte Negation</h2>
+      <p>Afrikaans verwendet eine doppelte Verneinung: <strong>nie … nie</strong></p>
+      <ul>
+        <li>Ek praat <strong>nie</strong> Duits <strong>nie</strong>. → Ich spreche kein Deutsch.</li>
+        <li>Hy is <strong>nie</strong> hier <strong>nie</strong>. → Er ist nicht hier.</li>
+      </ul>
+    </div>
+
+    <div class="grammar-section">
+      <h2>🏷 Artikel</h2>
+      <p>Es gibt nur einen bestimmten Artikel: <strong>die</strong> (für alle Genera). Der unbestimmte Artikel ist <strong>'n</strong> (ausgesprochen wie „uh").</p>
+      <ul>
+        <li>die man = der Mann</li>
+        <li>die vrou = die Frau</li>
+        <li>'n boek = ein Buch</li>
+      </ul>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const vocab = [
+  // basics
+  { af:"hallo", de:"Hallo", cat:"basics", pron:"hal-lo" },
+  { af:"totsiens", de:"Auf Wiedersehen", cat:"basics", pron:"tot-seens" },
+  { af:"dankie", de:"Danke", cat:"basics", pron:"dahn-ki" },
+  { af:"asseblief", de:"Bitte", cat:"basics", pron:"as-se-bleef" },
+  { af:"ja", de:"Ja", cat:"basics", pron:"ya" },
+  { af:"nee", de:"Nein", cat:"basics", pron:"nee-uh" },
+  { af:"goeie more", de:"Guten Morgen", cat:"basics", pron:"χu-uh mo-ruh" },
+  { af:"goeie naand", de:"Guten Abend", cat:"basics", pron:"χu-uh nahnt" },
+  { af:"goeie nag", de:"Gute Nacht", cat:"basics", pron:"χu-uh nax" },
+  { af:"hoe gaan dit", de:"Wie geht es dir?", cat:"basics", pron:"hu χahn dit" },
+  { af:"dit gaan goed", de:"Es geht mir gut", cat:"basics", pron:"dit χahn χut" },
+  { af:"verskoon my", de:"Entschuldigung", cat:"basics", pron:"fer-skonn mai" },
+  { af:"ek verstaan nie", de:"Ich verstehe nicht", cat:"basics", pron:"ek fer-stahn nee" },
+  { af:"praat stadig", de:"Sprich langsamer", cat:"basics", pron:"praht stah-dix" },
+  // numbers
+  { af:"een", de:"eins", cat:"numbers", pron:"een" },
+  { af:"twee", de:"zwei", cat:"numbers", pron:"tvee" },
+  { af:"drie", de:"drei", cat:"numbers", pron:"dree" },
+  { af:"vier", de:"vier", cat:"numbers", pron:"feer" },
+  { af:"vyf", de:"fünf", cat:"numbers", pron:"fayf" },
+  { af:"ses", de:"sechs", cat:"numbers", pron:"ses" },
+  { af:"sewe", de:"sieben", cat:"numbers", pron:"see-vuh" },
+  { af:"agt", de:"acht", cat:"numbers", pron:"axt" },
+  { af:"nege", de:"neun", cat:"numbers", pron:"nee-χuh" },
+  { af:"tien", de:"zehn", cat:"numbers", pron:"teen" },
+  { af:"twintig", de:"zwanzig", cat:"numbers", pron:"tvin-tix" },
+  { af:"honderd", de:"hundert", cat:"numbers", pron:"hon-dert" },
+  // colors
+  { af:"rooi", de:"rot", cat:"colors", pron:"roh-i" },
+  { af:"blou", de:"blau", cat:"colors", pron:"blow" },
+  { af:"groen", de:"grün", cat:"colors", pron:"χrun" },
+  { af:"geel", de:"gelb", cat:"colors", pron:"χeel" },
+  { af:"wit", de:"weiß", cat:"colors", pron:"vit" },
+  { af:"swart", de:"schwarz", cat:"colors", pron:"svart" },
+  { af:"oranje", de:"orange", cat:"colors", pron:"oh-ran-yuh" },
+  { af:"pienk", de:"rosa/pink", cat:"colors", pron:"peenk" },
+  // food
+  { af:"brood", de:"Brot", cat:"food", pron:"broht" },
+  { af:"water", de:"Wasser", cat:"food", pron:"vah-ter" },
+  { af:"melk", de:"Milch", cat:"food", pron:"melk" },
+  { af:"vleis", de:"Fleisch", cat:"food", pron:"flais" },
+  { af:"groente", de:"Gemüse", cat:"food", pron:"χrun-tuh" },
+  { af:"vrugte", de:"Obst", cat:"food", pron:"fruχ-tuh" },
+  { af:"kaas", de:"Käse", cat:"food", pron:"kahs" },
+  { af:"eier", de:"Eier", cat:"food", pron:"ay-er" },
+  { af:"koffie", de:"Kaffee", cat:"food", pron:"koff-ee" },
+  { af:"wyn", de:"Wein", cat:"food", pron:"vayn" },
+  // family
+  { af:"vader", de:"Vater", cat:"family", pron:"fah-der" },
+  { af:"moeder", de:"Mutter", cat:"family", pron:"mu-der" },
+  { af:"seun", de:"Sohn", cat:"family", pron:"sœn" },
+  { af:"dogter", de:"Tochter", cat:"family", pron:"dox-ter" },
+  { af:"broer", de:"Bruder", cat:"family", pron:"brur" },
+  { af:"suster", de:"Schwester", cat:"family", pron:"sus-ter" },
+  { af:"ouma", de:"Oma", cat:"family", pron:"oh-mah" },
+  { af:"oupa", de:"Opa", cat:"family", pron:"oh-pah" },
+  // time
+  { af:"vandag", de:"heute", cat:"time", pron:"fan-dax" },
+  { af:"môre", de:"morgen", cat:"time", pron:"moh-ruh" },
+  { af:"gister", de:"gestern", cat:"time", pron:"χis-ter" },
+  { af:"nou", de:"jetzt", cat:"time", pron:"now" },
+  { af:"later", de:"später", cat:"time", pron:"lah-ter" },
+  { af:"more oggend", de:"morgen früh", cat:"time", pron:"moh-ruh oχ-χent" },
+  { af:"week", de:"Woche", cat:"time", pron:"veek" },
+  { af:"maand", de:"Monat", cat:"time", pron:"mahnt" },
+  { af:"jaar", de:"Jahr", cat:"time", pron:"yahr" },
+  // verbs
+  { af:"praat", de:"sprechen", cat:"verbs", pron:"praht" },
+  { af:"eet", de:"essen", cat:"verbs", pron:"eet" },
+  { af:"drink", de:"trinken", cat:"verbs", pron:"drink" },
+  { af:"slaap", de:"schlafen", cat:"verbs", pron:"slahp" },
+  { af:"loop", de:"gehen/laufen", cat:"verbs", pron:"lohp" },
+  { af:"lees", de:"lesen", cat:"verbs", pron:"lees" },
+  { af:"skryf", de:"schreiben", cat:"verbs", pron:"skrayf" },
+  { af:"hoor", de:"hören", cat:"verbs", pron:"hohr" },
+  { af:"sien", de:"sehen", cat:"verbs", pron:"seen" },
+  { af:"koop", de:"kaufen", cat:"verbs", pron:"kohp" },
+  { af:"weet", de:"wissen", cat:"verbs", pron:"veet" },
+  { af:"het", de:"haben (Hilfsverb)", cat:"verbs", pron:"het" },
+  { af:"is", de:"sein", cat:"verbs", pron:"is" },
+  { af:"gaan", de:"gehen (werden)", cat:"verbs", pron:"χahn" },
+];
+
+const phrases = [
+  { cat:"Begrüßung & Abschied", items:[
+    { af:"Hallo!", de:"Hallo!", pron:"hal-lo" },
+    { af:"Goeie more!", de:"Guten Morgen!", pron:"χu-uh mo-ruh" },
+    { af:"Goeie middag!", de:"Guten Mittag!", pron:"χu-uh mi-dax" },
+    { af:"Goeie naand!", de:"Guten Abend!", pron:"χu-uh nahnt" },
+    { af:"Totsiens!", de:"Auf Wiedersehen!", pron:"tot-seens" },
+    { af:"Lekker dag!", de:"Schönen Tag!", pron:"lek-ker dax" },
+    { af:"Sien jou later!", de:"Bis später!", pron:"seen yow lah-ter" },
+  ]},
+  { cat:"Höflichkeiten", items:[
+    { af:"Dankie baie.", de:"Vielen Dank.", pron:"dahn-ki by-uh" },
+    { af:"Asseblief.", de:"Bitte.", pron:"as-se-bleef" },
+    { af:"Verskoon my.", de:"Entschuldigung.", pron:"fer-skonn mai" },
+    { af:"Dit is reg.", de:"Das ist in Ordnung.", pron:"dit is rex" },
+    { af:"Geen probleem nie.", de:"Kein Problem.", pron:"χeen pro-bleem nee" },
+  ]},
+  { cat:"Sich vorstellen", items:[
+    { af:"Wat is jou naam?", de:"Wie heißt du?", pron:"vat is yow nahm" },
+    { af:"My naam is …", de:"Mein Name ist …", pron:"mai nahm is" },
+    { af:"Waar kom jy vandaan?", de:"Woher kommst du?", pron:"vahr kom yai fan-dahn" },
+    { af:"Ek kom van Duitsland.", de:"Ich komme aus Deutschland.", pron:"ek kom fan dœits-lant" },
+    { af:"Aangenaam kennis te maak.", de:"Schön, dich kennenzulernen.", pron:"ahn-χe-nahm ken-nis tuh mahk" },
+  ]},
+  { cat:"Reisen & Orientierung", items:[
+    { af:"Waar is die stasie?", de:"Wo ist der Bahnhof?", pron:"vahr is dee stah-see" },
+    { af:"Hoe ver is dit?", de:"Wie weit ist es?", pron:"hu fer is dit" },
+    { af:"Ek is verlore.", de:"Ich bin verloren.", pron:"ek is fer-loh-ruh" },
+    { af:"Kan jy my help?", de:"Kannst du mir helfen?", pron:"kan yai mai help" },
+    { af:"Ek soek 'n hotel.", de:"Ich suche ein Hotel.", pron:"ek suk uh hoh-tel" },
+  ]},
+  { cat:"Essen & Restaurant", items:[
+    { af:"Ek is honger.", de:"Ich bin hungrig.", pron:"ek is hong-er" },
+    { af:"Ek is dors.", de:"Ich bin durstig.", pron:"ek is dors" },
+    { af:"Die spyskaart, asseblief.", de:"Die Speisekarte, bitte.", pron:"dee spais-kahrt as-se-bleef" },
+    { af:"Wat beveel jy aan?", de:"Was empfiehlst du?", pron:"vat be-feel yai ahn" },
+    { af:"Die rekening, asseblief.", de:"Die Rechnung, bitte.", pron:"dee reh-kening as-se-bleef" },
+    { af:"Dit was heerlik!", de:"Das war köstlich!", pron:"dit vas heer-lik" },
+  ]},
+  { cat:"Notfälle", items:[
+    { af:"Help!", de:"Hilfe!", pron:"help" },
+    { af:"Bel 'n ambulans!", de:"Ruf einen Krankenwagen!", pron:"bel uh am-bu-lans" },
+    { af:"Ek het hulp nodig.", de:"Ich brauche Hilfe.", pron:"ek het hulp noh-dix" },
+    { af:"Ek is siek.", de:"Ich bin krank.", pron:"ek is seek" },
+    { af:"Waar is die hospitaal?", de:"Wo ist das Krankenhaus?", pron:"vahr is dee hos-pi-tahl" },
+  ]},
+];
+
+// ═══════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════
+document.querySelectorAll('#nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ═══════════════════════════════════════════════
+// FLASHCARDS
+// ═══════════════════════════════════════════════
+let fcDeck = [...vocab];
+let fcIdx  = 0;
+
+function fcFilter() {
+  const cat = document.getElementById('fc-category').value;
+  fcDeck = cat === 'all' ? [...vocab] : vocab.filter(v => v.cat === cat);
+  fcIdx = 0;
+  fcRender();
+}
+document.getElementById('fc-category').addEventListener('change', fcFilter);
+
+function fcRender() {
+  const card = document.getElementById('flashcard');
+  card.classList.remove('flipped');
+  const v = fcDeck[fcIdx];
+  document.getElementById('fc-front-word').textContent = v.af;
+  document.getElementById('fc-front-hint').textContent = v.cat;
+  document.getElementById('fc-back-word').textContent  = v.de;
+  document.getElementById('fc-back-hint').textContent  = v.pron ? `Aussprache: ${v.pron}` : '';
+  document.getElementById('fc-progress').textContent   = `${fcIdx+1} / ${fcDeck.length}`;
+}
+document.getElementById('fc-wrapper').addEventListener('click', () => {
+  document.getElementById('flashcard').classList.toggle('flipped');
+});
+function fcNext() { fcIdx = (fcIdx + 1) % fcDeck.length; fcRender(); }
+function fcPrev() { fcIdx = (fcIdx - 1 + fcDeck.length) % fcDeck.length; fcRender(); }
+function fcShuffle() { fcDeck.sort(() => Math.random() - .5); fcIdx = 0; fcRender(); }
+fcRender();
+
+// ═══════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════
+const QUIZ_LEN = 10;
+let qDeck, qIdx, qScore, qAnswered;
+
+function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
+
+function quizRestart() {
+  document.getElementById('quiz-game').style.display = '';
+  document.getElementById('quiz-result').style.display = 'none';
+  qDeck     = shuffle(vocab).slice(0, QUIZ_LEN);
+  qIdx      = 0;
+  qScore    = 0;
+  qAnswered = false;
+  document.getElementById('q-score').textContent = 0;
+  quizRender();
+}
+
+function quizRender() {
+  const v     = qDeck[qIdx];
+  const toDE  = Math.random() > .5;
+  document.getElementById('q-counter').textContent   = `Frage ${qIdx+1} / ${QUIZ_LEN}`;
+  document.getElementById('q-progress').style.width  = `${(qIdx/QUIZ_LEN)*100}%`;
+  document.getElementById('q-direction').textContent = toDE ? 'Afrikaans → Deutsch' : 'Deutsch → Afrikaans';
+  document.getElementById('q-word').textContent      = toDE ? v.af : v.de;
+  document.getElementById('q-feedback').textContent  = '';
+  document.getElementById('q-next-btn').style.display = 'none';
+  qAnswered = false;
+
+  const correct = toDE ? v.de : v.af;
+  const pool    = shuffle(vocab.filter(x => x !== v)).slice(0, 3).map(x => toDE ? x.de : x.af);
+  const options = shuffle([correct, ...pool]);
+
+  const cont = document.getElementById('q-options');
+  cont.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt;
+    btn.onclick = () => quizAnswer(btn, opt, correct);
+    cont.appendChild(btn);
+  });
+}
+
+function quizAnswer(btn, chosen, correct) {
+  if (qAnswered) return;
+  qAnswered = true;
+  const fb = document.getElementById('q-feedback');
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    fb.textContent = '✅ Richtig!';
+    fb.style.color = '#155724';
+    qScore++;
+    document.getElementById('q-score').textContent = qScore;
+  } else {
+    btn.classList.add('wrong');
+    fb.textContent = `❌ Falsch – richtig: ${correct}`;
+    fb.style.color = '#721c24';
+    document.querySelectorAll('#q-options button').forEach(b => {
+      if (b.textContent === correct) b.classList.add('correct');
+    });
+  }
+  document.querySelectorAll('#q-options button').forEach(b => b.disabled = true);
+  document.getElementById('q-next-btn').style.display = 'block';
+}
+
+function quizNext() {
+  qIdx++;
+  if (qIdx >= QUIZ_LEN) {
+    document.getElementById('quiz-game').style.display = 'none';
+    const res = document.getElementById('quiz-result');
+    res.style.display = '';
+    const pct = Math.round((qScore / QUIZ_LEN) * 100);
+    document.getElementById('result-emoji').textContent  = pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '📚';
+    document.getElementById('result-title').textContent  = pct >= 80 ? 'Ausgezeichnet!' : pct >= 50 ? 'Gut gemacht!' : 'Weiter üben!';
+    document.getElementById('result-text').textContent   = `Du hast ${qScore} von ${QUIZ_LEN} Fragen richtig beantwortet (${pct}%).`;
+  } else {
+    quizRender();
+  }
+}
+quizRestart();
+
+// ═══════════════════════════════════════════════
+// TYPING
+// ═══════════════════════════════════════════════
+let typeDeck = shuffle(vocab);
+let typeIdx  = 0;
+let typeCorrect = 0, typeWrong = 0, typeTotal = 0;
+
+function typeRender() {
+  const v = typeDeck[typeIdx];
+  document.getElementById('type-prompt').textContent = v.de;
+  document.getElementById('type-input').value = '';
+  document.getElementById('type-input').className = 'typing-input';
+  document.getElementById('type-feedback').textContent = '';
+  document.getElementById('type-input').focus();
+}
+
+function typeCheck() {
+  const v      = typeDeck[typeIdx];
+  const inp    = document.getElementById('type-input');
+  const answer = inp.value.trim().toLowerCase();
+  const correct= v.af.toLowerCase();
+  const fb     = document.getElementById('type-feedback');
+  typeTotal++;
+  document.getElementById('type-total').textContent = typeTotal;
+  if (answer === correct) {
+    inp.className = 'typing-input ok';
+    fb.textContent = '✅ Richtig!';
+    fb.style.color = '#155724';
+    typeCorrect++;
+    document.getElementById('type-correct').textContent = typeCorrect;
+    setTimeout(typeSkip, 900);
+  } else {
+    inp.className = 'typing-input err';
+    fb.textContent = `❌ Richtig: "${v.af}"`;
+    fb.style.color = '#721c24';
+    typeWrong++;
+    document.getElementById('type-wrong').textContent = typeWrong;
+  }
+}
+
+function typeSkip() {
+  typeIdx = (typeIdx + 1) % typeDeck.length;
+  if (typeIdx === 0) typeDeck = shuffle(vocab);
+  typeRender();
+}
+
+document.getElementById('type-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') typeCheck();
+});
+typeRender();
+
+// ═══════════════════════════════════════════════
+// PHRASES
+// ═══════════════════════════════════════════════
+const pc = document.getElementById('phrases-container');
+phrases.forEach(group => {
+  const sec = document.createElement('div');
+  sec.className = 'phrase-category';
+  sec.innerHTML = `<h2>${group.cat}</h2>`;
+  const grid = document.createElement('div');
+  grid.className = 'phrases-grid';
+  group.items.forEach(p => {
+    grid.innerHTML += `
+      <div class="phrase-card">
+        <div class="phrase-af">${p.af}</div>
+        <div class="phrase-de">${p.de}</div>
+        <div class="phrase-pron">[${p.pron}]</div>
+      </div>`;
+  });
+  sec.appendChild(grid);
+  pc.appendChild(sec);
+});
+</script>
+</body>
+</html>
